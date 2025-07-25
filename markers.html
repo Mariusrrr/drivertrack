@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Route Marker Toggle</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      display: flex;
+      font-family: sans-serif;
+    }
+
+    #sidebar {
+      width: 250px;
+      padding: 10px;
+      background: #f5f5f5;
+      overflow-y: auto;
+      border-right: 1px solid #ccc;
+    }
+
+    #map {
+      flex: 1;
+      height: 100%;
+    }
+
+    .route-title {
+      font-weight: bold;
+      margin-top: 1rem;
+    }
+
+    label {
+      display: block;
+      margin-left: 1rem;
+    }
+  </style>
+</head>
+<body>
+
+<div id="sidebar">
+  <div>
+    <input type="checkbox" id="route1-toggle" checked>
+    <label for="route1-toggle" class="route-title">Route 1</label>
+    <label><input type="checkbox" data-route="route1" data-index="0" checked> Shop 1</label>
+    <label><input type="checkbox" data-route="route1" data-index="1" checked> Shop 2</label>
+    <label><input type="checkbox" data-route="route1" data-index="2" checked> Shop 3</label>
+  </div>
+
+  <div>
+    <input type="checkbox" id="route2-toggle" checked>
+    <label for="route2-toggle" class="route-title">Route 2</label>
+    <label><input type="checkbox" data-route="route2" data-index="0" checked> Shop 1</label>
+    <label><input type="checkbox" data-route="route2" data-index="1" checked> Shop 2</label>
+    <label><input type="checkbox" data-route="route2" data-index="2" checked> Shop 3</label>
+  </div>
+
+  <div>
+    <input type="checkbox" id="route3-toggle" checked>
+    <label for="route3-toggle" class="route-title">Route 3</label>
+    <label><input type="checkbox" data-route="route3" data-index="0" checked> Shop 1</label>
+    <label><input type="checkbox" data-route="route3" data-index="1" checked> Shop 2</label>
+    <label><input type="checkbox" data-route="route3" data-index="2" checked> Shop 3</label>
+  </div>
+</div>
+
+<div id="map"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+// Initialize map
+const map = L.map('map').setView([59.9139, 10.7522], 12);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '&copy; OpenStreetMap contributors'
+}).addTo(map);
+
+// Example shop coordinates (lat, lon) for each route
+const routes = {
+  route1: [
+    [59.914, 10.752],
+    [59.916, 10.754],
+    [59.918, 10.756]
+  ],
+  route2: [
+    [59.92, 10.75],
+    [59.922, 10.752],
+    [59.924, 10.754]
+  ],
+  route3: [
+    [59.93, 10.75],
+    [59.932, 10.752],
+    [59.934, 10.754]
+  ]
+};
+
+// Store markers by route
+const routeMarkers = {
+  route1: [],
+  route2: [],
+  route3: []
+};
+
+// Create markers
+for (const [routeName, shops] of Object.entries(routes)) {
+  shops.forEach((coords, index) => {
+    const marker = L.marker(coords).addTo(map).bindPopup(`${routeName} - Shop ${index + 1}`);
+    routeMarkers[routeName].push(marker);
+  });
+}
+
+// Listen for individual shop toggle
+document.querySelectorAll('input[type="checkbox"][data-route]').forEach(input => {
+  input.addEventListener('change', () => {
+    const route = input.dataset.route;
+    const index = parseInt(input.dataset.index);
+    const marker = routeMarkers[route][index];
+    if (input.checked) {
+      marker.addTo(map);
+    } else {
+      map.removeLayer(marker);
+    }
+  });
+});
+
+// Listen for full route toggle
+["route1", "route2", "route3"].forEach(route => {
+  const toggle = document.getElementById(`${route}-toggle`);
+  toggle.addEventListener('change', () => {
+    const checkboxes = document.querySelectorAll(`input[data-route="${route}"]`);
+    checkboxes.forEach((cb, i) => {
+      cb.checked = toggle.checked;
+      const marker = routeMarkers[route][i];
+      if (toggle.checked) {
+        marker.addTo(map);
+      } else {
+        map.removeLayer(marker);
+      }
+    });
+  });
+});
+</script>
+
+</body>
+</html>

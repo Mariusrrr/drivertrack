@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Live Driver Tracker</title>
+  <link rel="stylesheet" href="main.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+    }
+    #map {
+      height: 80vh;
+      width: 80%;
+      margin-left: 230px;
+      margin-top: 100px;
+    }
+  </style>
+</head>
+<body>
+
+<div id="map"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const map = L.map('map').setView([59.9139, 10.7522], 12);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '&copy; OpenStreetMap contributors'
+}).addTo(map);
+
+let marker = null;
+let deviceId = null;
+
+// === CONFIGURATION ===
+const serverUrl = "http://10.0.24.178:8082";
+const userEmail = "m.ruudrohne@gmail.com";
+const userPassword = "MariusRR1";
+const deviceName = "test"; // Must match your Traccar device name or uniqueId
+const auth = btoa(`${userEmail}:${userPassword}`); // Basic Auth string
+// ======================
+
+async function fetchDevicePosition() {
+  try {
+    // 1. Get Device ID
+    if (!deviceId) {
+      const deviceRes = await fetch(`${serverUrl}/api/devices`, {
+        headers: {
+          "Authorization": `Basic ${auth}`
+        }
+      });
+
+      if (!deviceRes.ok) {
+        const msg = await deviceRes.text();
+        console.error("❌ Failed to load devices:", msg);
+        return;
+      }
+
+      const devices = await deviceRes.json();
+      const device = devices.find(d => d.name === deviceName || d.uniqueId === deviceName);
+      if (!device) {
+        console.error(`❌ Device '${deviceName}' not found.`);
+        return;
+      }
+
+      deviceId = device.id;
+      console.log(`🔍 Found device '${deviceName}' with ID: ${deviceId}`);
+    }
+
+    // 2. Get Position
+    const posRes = await fetch(`${serverUrl}/api/positions`, {
+      headers: {
+        "Authorization": `Basic ${auth}`
+      }
+    });
+
+    if (!posRes.ok) {
+      const msg = await posRes.text();
+      console.error("❌ Failed to load position:", msg);
+      return;
+    }
+
+    const positions = await posRes.json();
+    const position = positions.find(p => p.deviceId === deviceId);
+
+    if (!position) {
+      console.warn("⚠️ No position data yet for device.");
+      return;
+    }
+
+    const lat = position.latitude;
+    const lon = position.longitude;
+    console.log(`📍 Updated position: ${lat}, ${lon}`);
+
+    if (!marker) {
+      marker = L.marker([lat, lon]).addTo(map).bindPopup("Driver: " + deviceName).openPopup();
+    } else {
+      marker.setLatLng([lat, lon]);
+    }
+
+    map.setView([lat, lon]);
+
+  } catch (error) {
+    console.error("💥 Unexpected error:", error);
+  }
+}
+
+// Load immediately + refresh every 10 sec
+fetchDevicePosition();
+setInterval(fetchDevicePosition, 10000);
+</script>
+
+<div class="sidenav">
+    <h2>ÅB DriverTrack</h2>
+    <a href="index.html">Dashboard</a>
+    <h3>Sheets</h3>
+    <a href="p&d.html">Pick up and Delivery</a>
+    <a href="budbil.html">Budbil</a>
+    <h3>Social</h3>
+        <h3>System</h3>
+    <a href="#settings">Settings</a>
+    <a href="#logout">Log out</a>
+        <h3>Upcomming Features</h3>
+    <a href="#stock">Inventory</a>
+    <a href="tracking.html">Tracking</a>
+    <a href="#chat">Chat</a>
+  </div>
+
+ 
+</body>
+</html>
